@@ -66,6 +66,7 @@
 
 (deflayer base   @a-mod @s-mod @d-mod @f-mod @j-mod @k-mod @l-mod @semi-mod)
 (deflayer nomods a      s      d      f      j      k      l      ;)
+(deflayer games a      s      d      f      j      k      l      ;)
 
 (deffakekeys
   to-base (layer-switch base)
@@ -86,20 +87,27 @@
   k-mod (tap-hold-release-keys $middy-tap $middy-tap (multi k @tap) rmet $right-hand-keys)
   l-mod (tap-hold-release-keys $ring-tap  $ring-tap  (multi l @tap) ralt $right-hand-keys)
   semi-mod (tap-hold-release-keys $pinky-tap $pinky-tap (multi ; @tap) rctl $right-hand-keys)
+  ;; game mode toggle: j+k+l+;+g -> raw keyboard until pressed again
+  gm (switch
+    ((layer games)) (layer-switch base) break
+    ((not (layer games))) (layer-switch games) break
+  )
 )
 
 ;; (keys) action chord-timeout release-behaviour (disabled-layers)
-;; adjacent pairs
+;; mod chords are disabled on the games layer (raw passthrough there)
 (defchordsv2
-  (a s)   (multi lctl lalt)       $chord-window first-release ()
-  (s d)   (multi lalt lmet)       $chord-window first-release ()
-  (d f)   (multi lmet lsft)       $chord-window first-release ()
-  (j k)   (multi rsft rmet)       $chord-window first-release ()
-  (k l)   (multi rmet ralt)       $chord-window first-release ()
-  (l ;)   (multi ralt rctl)       $chord-window first-release ()
+  (a s)   (multi lctl lalt)       $chord-window first-release (games)
+  (s d)   (multi lalt lmet)       $chord-window first-release (games)
+  (d f)   (multi lmet lsft)       $chord-window first-release (games)
+  (j k)   (multi rsft rmet)       $chord-window first-release (games)
+  (k l)   (multi rmet ralt)       $chord-window first-release (games)
+  (l ;)   (multi ralt rctl)       $chord-window first-release (games)
   ;; adjacent triples: all three mods of the row
-  (a s d) (multi lctl lalt lmet)  $chord-window first-release ()
-  (s d f) (multi lalt lmet lsft)  $chord-window first-release ()
-  (j k l) (multi rsft rmet ralt)  $chord-window first-release ()
-  (k l ;) (multi rmet ralt rctl)  $chord-window first-release ()
+  (a s d) (multi lctl lalt lmet)  $chord-window first-release (games)
+  (s d f) (multi lalt lmet lsft)  $chord-window first-release (games)
+  (j k l) (multi rsft rmet ralt)  $chord-window first-release (games)
+  (k l ;) (multi rmet ralt rctl)  $chord-window first-release (games)
+  ;; game mode toggle chord: longer window since 5 keys stagger more
+  (j k l ; g) @gm 60 first-release ()
 )
