@@ -1,0 +1,105 @@
+;; Bilateral Home Row Mods for borberix's INTERNAL laptop keyboard only,
+;; with the timing of the MoErgo Go60 "Myrioku like mac with tailorkey
+;; homerow mod" keymap (TailorKey HRM v1B).
+;;
+;; Tap = letter | Hold = modifier (same mapping as the Go60):
+;;   a -> Ctrl        j -> Shift
+;;   s -> Alt         k -> Super/GUI
+;;   d -> Super       l -> Alt
+;;   f -> Shift       ; -> Ctrl
+;;
+;; TailorKey v1B timing: per-finger tapping terms pinky 220 / ring 190 /
+;; middle 160 / index 130 ms; requirePriorIdleMs 100 emulated via the
+;; @tap / nomods layer trick AND chords-v2-min-idle (for chord arming);
+;; bilateral semantics emulated with tap-hold-release-keys + same-hand
+;; early-tap lists.
+;; Same-hand shortcuts use the opposite hand's mod (Ctrl+C = hold ";" + c).
+;;
+;; ADJACENT SAME-HAND CHORDS (defchordsv2, processed BEFORE tap-hold):
+;;   a+s -> Ctrl+Alt      j+k -> Shift+Super
+;;   s+d -> Alt+Super     k+l -> Super+Alt
+;;   d+f -> Super+Shift   l+; -> Alt+Ctrl
+;; Mods are held until the FIRST of the two keys is released, so an
+;; opposite-hand key can be combined (a+s then u -> Ctrl+Alt+u).
+;; Chord window: both keys must be pressed within $chord-window ms of the
+;; first press (near-simultaneous). Rolling a->s with a normal typing
+;; stagger (> window) still types letters. After any keypress, chords are
+;; disarmed for chords-v2-min-idle ms (Go60 requirePriorIdleMs 100
+;; equivalent), so typing a word containing "as" mid-sentence never chords.
+
+(defcfg
+  process-unmapped-keys yes
+  ;; Required by defchordsv2; also makes tap-hold resolution more responsive
+  concurrent-tap-hold yes
+  ;; Go60 requirePriorIdleMs 100 equivalent for chord arming
+  chords-v2-min-idle 100
+  linux-dev (
+    /dev/input/by-path/pci-0000:00:14.0-usb-0:4:1.0-event-kbd
+    /dev/input/by-path/platform-i8042-serio-0-event-kbd
+  )
+)
+
+(defsrc
+  a  s  d  f  j  k  l  ;
+)
+
+(defvar
+  pinky-tap  220   ;; a  ;  (Go60 requirePriorIdle 100)
+  ring-tap   190   ;; s  l
+  middy-tap  160   ;; d  k
+  index-tap  130   ;; f  j  (Go60 requirePriorIdle 50 left / 80 right)
+  ;; max stagger between the two presses of a deliberate chord; tune on
+  ;; hardware (smaller = fewer false chords while typing, larger = easier
+  ;; deliberate chords)
+  chord-window 25
+  left-hand-keys (
+    q w e r t
+    a s d f g
+    z x c v b
+  )
+  right-hand-keys (
+    y u i o p
+    h j k l ;
+    n m , . /
+  )
+)
+
+(deflayer base   @a-mod @s-mod @d-mod @f-mod @j-mod @k-mod @l-mod @semi-mod)
+(deflayer nomods a      s      d      f      j      k      l      ;)
+
+(deffakekeys
+  to-base (layer-switch base)
+)
+
+(defalias
+  tap (multi
+    (layer-switch nomods)
+    (on-idle-fakekey to-base tap 100)
+  )
+  ;; LEFT HAND (activates when combined with a RIGHT-hand key)
+  a-mod (tap-hold-release-keys $pinky-tap $pinky-tap (multi a @tap) lctl $left-hand-keys)
+  s-mod (tap-hold-release-keys $ring-tap  $ring-tap  (multi s @tap) lalt $left-hand-keys)
+  d-mod (tap-hold-release-keys $middy-tap $middy-tap (multi d @tap) lmet $left-hand-keys)
+  f-mod (tap-hold-release-keys $index-tap $index-tap (multi f @tap) lsft $left-hand-keys)
+  ;; RIGHT HAND (activates when combined with a LEFT-hand key)
+  j-mod (tap-hold-release-keys $index-tap $index-tap (multi j @tap) rsft $right-hand-keys)
+  k-mod (tap-hold-release-keys $middy-tap $middy-tap (multi k @tap) rmet $right-hand-keys)
+  l-mod (tap-hold-release-keys $ring-tap  $ring-tap  (multi l @tap) ralt $right-hand-keys)
+  semi-mod (tap-hold-release-keys $pinky-tap $pinky-tap (multi ; @tap) rctl $right-hand-keys)
+)
+
+;; (keys) action chord-timeout release-behaviour (disabled-layers)
+;; adjacent pairs
+(defchordsv2
+  (a s)   (multi lctl lalt)       $chord-window first-release ()
+  (s d)   (multi lalt lmet)       $chord-window first-release ()
+  (d f)   (multi lmet lsft)       $chord-window first-release ()
+  (j k)   (multi rsft rmet)       $chord-window first-release ()
+  (k l)   (multi rmet ralt)       $chord-window first-release ()
+  (l ;)   (multi ralt rctl)       $chord-window first-release ()
+  ;; adjacent triples: all three mods of the row
+  (a s d) (multi lctl lalt lmet)  $chord-window first-release ()
+  (s d f) (multi lalt lmet lsft)  $chord-window first-release ()
+  (j k l) (multi rsft rmet ralt)  $chord-window first-release ()
+  (k l ;) (multi rmet ralt rctl)  $chord-window first-release ()
+)
