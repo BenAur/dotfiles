@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Stows the kanata config package into $HOME.
-# Creates/updates: ~/.config/kanata/config.kbd (symlink into this repo)
+# Stows the kanata and emacs config packages into $HOME.
+# Creates/updates:
+#   ~/.config/kanata/config.kbd (symlink into this repo)
+#   ~/.config/emacs/init.el     (symlink into this repo)
 set -euo pipefail
 
 if ! command -v stow >/dev/null 2>&1; then
@@ -18,8 +20,16 @@ if [ -e "$CFG" ] && [ ! -L "$CFG" ]; then
   echo "Backed up existing config to ${CFG}.bak"
 fi
 
+INIT="${HOME}/.config/emacs/init.el"
+if [ -e "$INIT" ] && [ ! -L "$INIT" ]; then
+  cp "$INIT" "${INIT}.bak"
+  rm "$INIT"
+  echo "Backed up existing config to ${INIT}.bak"
+fi
+
 # --restow: removes then re-applies symlinks, safe to run repeatedly
-stow --restow --dir="$(pwd)" --target="$HOME" kanata
+stow --restow --dir="$(pwd)" --target="$HOME" kanata emacs
 
 echo "Stowed: ${CFG} -> $(readlink -f "$CFG")"
-echo "Apply with: sudo systemctl restart kanata"
+echo "Stowed: ${INIT} -> $(readlink -f "$INIT")"
+echo "Apply kanata with: sudo systemctl restart kanata"
